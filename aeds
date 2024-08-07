@@ -1,0 +1,220 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Produtos
+{
+    int codigo;
+    float preco;
+    char nome[100];
+    char descricao[100];
+    int quantidade;
+} TProdutos;
+
+typedef struct Celula
+{
+    TProdutos item;
+    struct Celula *prox;
+} TCelula;
+
+typedef struct Lista
+{
+    TCelula *primeiro;
+    TCelula *ultimo;
+    int tamanho;
+} TLista;
+
+void FLVazia(TLista *Lista)
+{
+    Lista->primeiro = (TCelula *)malloc(sizeof(TCelula));
+    Lista->ultimo = Lista->primeiro;
+    Lista->primeiro->prox = NULL;
+    Lista->tamanho = 0;
+}
+
+int Vazia(TLista Lista)
+{
+    return (Lista.primeiro == Lista.ultimo);
+}
+
+void Inserir(TProdutos x, TLista *Lista)
+{
+    Lista->ultimo->prox = (TCelula *)malloc(sizeof(TCelula));
+    Lista->ultimo = Lista->ultimo->prox;
+    Lista->ultimo->item = x;
+    Lista->ultimo->prox = NULL;
+    Lista->tamanho++;
+}
+
+void ImprimirProduto(TProdutos Item)
+{
+    printf("Codigo: %d\n", Item.codigo);
+    printf("Descricao: %s", Item.descricao);
+    printf("Nome: %s", Item.nome);
+    printf("Preco: %.2f\n", Item.preco);
+    printf("Quantidade: %d\n", Item.quantidade);
+}
+
+void Imprimir(TLista Lista)
+{
+    TCelula *Aux;
+    Aux = Lista.primeiro->prox;
+    while (Aux != NULL)
+    {
+        ImprimirProduto(Aux->item);
+        Aux = Aux->prox;
+    }
+}
+
+TCelula *Pesquisar(TLista Lista, int codigo)
+{
+    TCelula *Aux;
+    Aux = Lista.primeiro->prox;
+    while (Aux != NULL)
+    {
+        if (Aux->item.codigo == codigo)
+            return Aux;
+        Aux = Aux->prox;
+    }
+    return NULL;
+}
+
+TCelula *PesquisarPorNome(TLista Lista, const char *nome)
+{
+    TCelula *Aux;
+    Aux = Lista.primeiro->prox;
+    while (Aux != NULL)
+    {
+        if (strcmp(Aux->item.nome, nome) == 0)
+            return Aux;
+        Aux = Aux->prox;
+    }
+    return NULL;
+}
+
+void Excluir(TLista *Lista, int codigo)
+{
+    TCelula *Aux1, *Aux2;
+    Aux1 = Lista->primeiro;
+    while (Aux1->prox != NULL && Aux1->prox->item.codigo != codigo)
+    {
+        Aux1 = Aux1->prox;
+    }
+
+    if (Aux1->prox != NULL)
+    {
+        Aux2 = Aux1->prox;
+        Aux1->prox = Aux2->prox;
+        if (Aux2 == Lista->ultimo)
+        {
+            Lista->ultimo = Aux1;
+        }
+        free(Aux2);
+        Lista->tamanho--;
+    }
+}
+
+void LerProduto(TProdutos *Item)
+{
+    printf("\nDigite o codigo do produto: ");
+    scanf("%d", &Item->codigo);
+    getchar(); // Consome o newline restante do buffer
+    printf("Digite o nome do produto: ");
+    fgets(Item->nome, sizeof(Item->nome), stdin);
+    Item->nome[strcspn(Item->nome, "\n")] = '\0'; // Remove o newline do final
+    printf("Digite a descricao: ");
+    fgets(Item->descricao, sizeof(Item->descricao), stdin);
+    Item->descricao[strcspn(Item->descricao, "\n")] = '\0'; // Remove o newline do final
+    printf("Digite o valor do produto: ");
+    scanf("%f", &Item->preco);
+    printf("Digite a quantidade: ");
+    scanf("%d", &Item->quantidade);
+}
+
+void LiberarLista(TLista *lista)
+{
+    TCelula *Aux1, *Aux2;
+    Aux1 = lista->primeiro;
+    while (Aux1 != NULL)
+    {
+        Aux2 = Aux1->prox;
+        free(Aux1);
+        Aux1 = Aux2;
+    }
+    lista->tamanho = 0;
+    lista->primeiro = NULL;
+    lista->ultimo = NULL;
+}
+
+void Atualizar(TLista *Lista, TProdutos Item)
+{
+    TCelula *CelulaEncontrada;
+    CelulaEncontrada = PesquisarPorNome(*Lista, Item.nome);
+
+    if (CelulaEncontrada != NULL)
+    {
+        printf("Produto encontrado. Atualize os dados:\n");
+        LerProduto(&Item);
+        CelulaEncontrada->item = Item;
+        printf("Produto Atualizado!\n");
+    }
+    else
+    {
+        printf("Produto nao encontrado!\n");
+    }
+}
+
+int main()
+{
+    TLista lista;
+    TProdutos produto;
+    FLVazia(&lista);
+
+    int x;
+    printf("Digite o numero de produtos a serem cadastrados: ");
+    scanf("%d", &x);
+
+    printf("Cadastro de produtos\n");
+    for (int i = 0; i < x; i++)
+    {
+        LerProduto(&produto);
+        Inserir(produto, &lista);
+    }
+
+    printf("\nLista de Produtos:\n");
+    Imprimir(lista);
+
+    int codigo;
+    printf("\nDigite o codigo do produto para pesquisar: ");
+    scanf("%d", &codigo);
+
+    TCelula *produto1 = Pesquisar(lista, codigo);
+    if (produto1 != NULL)
+    {
+        printf("\nProduto encontrado:\n");
+        ImprimirProduto(produto1->item);
+    }
+    else
+    {
+        printf("\nProduto nao encontrado!\n");
+    }
+
+    printf("\nDigite o codigo do produto para excluir: ");
+    scanf("%d", &codigo);
+    Excluir(&lista, codigo);
+
+    printf("\nLista apos exclusao:\n");
+    Imprimir(lista);
+
+    printf("\nDigite o nome do produto para atualizar: ");
+    getchar(); // Consome o newline restante do buffer
+    fgets(produto.nome, sizeof(produto.nome), stdin);
+    produto.nome[strcspn(produto.nome, "\n")] = '\0'; // Remove o newline do final
+    Atualizar(&lista, produto);
+
+    printf("\nLista apos atualizacao:\n");
+    Imprimir(lista);
+
+    LiberarLista(&lista);
+    return 0;
+}
